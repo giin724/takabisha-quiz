@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="高飛車クイズ">
+<link rel="apple-touch-icon" href="icon.png">
+<title>高飛車 ライセンス10 クイズ</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic', sans-serif;
+  background: linear-gradient(135deg, #0d2533, #1a4d5a, #0d3340);
+  color: #fff;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+/* ===== HOME ===== */
+.screen { display: none; min-height: 100dvh; }
+.screen.active { display: flex; flex-direction: column; }
+
+#home {
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  padding: 40px 20px;
+}
+#home .title-block { text-align: center; animation: fadeUp .8s ease-out; }
+#home .title-main { font-size: 52px; font-weight: 800; }
+#home .title-sub { font-size: 26px; font-weight: 600; opacity: .9; margin-top: 8px; }
+#home .title-quiz { font-size: 36px; font-weight: 800; color: #cc3333; margin-top: 8px; }
+#home .count { font-size: 18px; opacity: .6; }
+
+.btn-start {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: #cc3333; color: #fff; border: none; border-radius: 16px;
+  font-size: 20px; font-weight: 700; padding: 18px 60px;
+  cursor: pointer; box-shadow: 0 6px 20px rgba(200,50,50,.4);
+  transition: transform .15s, box-shadow .15s;
+}
+.btn-start:active { transform: scale(.96); box-shadow: 0 2px 10px rgba(200,50,50,.3); }
+
+/* ===== QUIZ ===== */
+#quiz { padding: 0 0 40px; }
+
+.quiz-header {
+  position: sticky; top: 0; z-index: 10;
+  background: rgba(13,37,51,.95); backdrop-filter: blur(8px);
+  padding: 12px 16px 8px;
+}
+.progress-bar { width: 100%; height: 5px; background: rgba(255,255,255,.1); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; background: #cc3333; border-radius: 3px; transition: width .3s; }
+.quiz-info { display: flex; justify-content: space-between; margin-top: 8px; font-size: 14px; opacity: .7; }
+.quiz-info .score-text { color: #6c6; opacity: 1; }
+
+.quiz-body { padding: 16px; }
+
+.question-box {
+  background: rgba(255,255,255,.1); border-radius: 12px;
+  padding: 20px; margin-bottom: 20px;
+  font-size: 17px; font-weight: 600; line-height: 1.6;
+}
+
+.choices { display: flex; flex-direction: column; gap: 12px; }
+
+.choice-btn {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: rgba(255,255,255,.08); border: 2px solid rgba(255,255,255,.15);
+  border-radius: 12px; padding: 16px; cursor: pointer;
+  transition: background .2s, border-color .2s; text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+.choice-btn:active:not(.disabled) { background: rgba(255,255,255,.15); }
+.choice-btn.disabled { cursor: default; }
+
+.choice-label {
+  flex-shrink: 0; width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.2); border-radius: 50%;
+  font-weight: 700; font-size: 15px;
+}
+.choice-text { font-size: 15px; line-height: 1.5; flex: 1; }
+.choice-icon { flex-shrink: 0; font-size: 20px; margin-left: auto; }
+
+/* Answer states */
+.choice-btn.correct { background: rgba(0,180,80,.15); border-color: rgba(0,180,80,.5); }
+.choice-btn.correct .choice-label { background: #0b4; }
+.choice-btn.wrong { background: rgba(220,50,50,.15); border-color: rgba(220,50,50,.5); }
+.choice-btn.wrong .choice-label { background: #c33; }
+.choice-btn.dim { opacity: .4; }
+
+/* Explanation */
+.explanation {
+  margin-top: 20px; padding: 16px; border-radius: 12px;
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+  animation: fadeUp .3s ease-out;
+}
+.explanation .result-label { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.explanation .result-label.correct { color: #4c4; }
+.explanation .result-label.wrong { color: #e44; }
+.explanation p { font-size: 14px; line-height: 1.7; opacity: .85; }
+
+.btn-next {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; margin-top: 20px; padding: 16px;
+  background: #cc3333; color: #fff; border: none; border-radius: 12px;
+  font-size: 17px; font-weight: 700; cursor: pointer;
+  transition: transform .15s;
+}
+.btn-next:active { transform: scale(.97); }
+
+/* ===== RESULT ===== */
+#result { align-items: center; padding: 40px 20px; }
+
+.score-circle {
+  position: relative; width: 180px; height: 180px; margin: 20px 0;
+}
+.score-circle svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.score-circle .bg { fill: none; stroke: rgba(255,255,255,.1); stroke-width: 10; }
+.score-circle .fg { fill: none; stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 1s ease-out; }
+.score-circle .label {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  text-align: center;
+}
+.score-circle .num { font-size: 52px; font-weight: 800; }
+.score-circle .den { font-size: 20px; opacity: .6; }
+
+.grade { font-size: 22px; font-weight: 700; margin: 8px 0; }
+.percentage { font-size: 16px; opacity: .6; margin-bottom: 20px; }
+
+.toggle-details {
+  background: none; border: none; color: rgba(255,255,255,.5);
+  font-size: 14px; cursor: pointer; padding: 8px; margin-bottom: 12px;
+}
+
+.details { width: 100%; max-width: 500px; }
+.detail-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: rgba(255,255,255,.06); border-radius: 10px;
+  padding: 14px; margin-bottom: 8px;
+}
+.detail-item .icon { font-size: 20px; flex-shrink: 0; }
+.detail-item .info { flex: 1; }
+.detail-item .q { font-size: 13px; font-weight: 600; line-height: 1.4; }
+.detail-item .ans { font-size: 12px; margin-top: 4px; opacity: .7; }
+.detail-item .ans.wrong-ans { color: #e66; }
+.detail-item .ans.correct-ans { color: #6c6; }
+
+.btn-home {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-top: 24px; padding: 16px 48px;
+  background: #cc3333; color: #fff; border: none; border-radius: 12px;
+  font-size: 17px; font-weight: 700; cursor: pointer;
+}
+.btn-home:active { transform: scale(.97); }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div id="home" class="screen active">
+  <div class="title-block">
+    <div class="title-main">高飛車</div>
+    <div class="title-sub">ライセンス10</div>
+    <div class="title-quiz">クイズ</div>
+  </div>
+  <div class="count">全11問</div>
+  <button class="btn-start" onclick="startQuiz()">&#9654; スタート</button>
+</div>
+
+<!-- QUIZ -->
+<div id="quiz" class="screen">
+  <div class="quiz-header">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="quiz-info">
+      <span id="qNumber">第 1 問 / 11 問</span>
+      <span class="score-text" id="scoreText">正解数: 0</span>
+    </div>
+  </div>
+  <div class="quiz-body" id="quizBody"></div>
+</div>
+
+<!-- RESULT -->
+<div id="result" class="screen">
+  <div class="score-circle">
+    <svg viewBox="0 0 200 200">
+      <circle class="bg" cx="100" cy="100" r="85"/>
+      <circle class="fg" id="scoreFg" cx="100" cy="100" r="85"/>
+    </svg>
+    <div class="label">
+      <div class="num" id="resultScore">0</div>
+      <div class="den" id="resultTotal">/ 11</div>
+    </div>
+  </div>
+  <div class="grade" id="gradeText"></div>
+  <div class="percentage" id="percentText"></div>
+  <button class="toggle-details" onclick="toggleDetails()">&#9660; 詳細を見る</button>
+  <div class="details" id="detailsBox" style="display:none"></div>
+  <button class="btn-home" onclick="goHome()">&#8634; ホームに戻る</button>
+</div>
+
+<script>
+const questions = [
+  {
+    q: "高飛車のブレーキではないものを一つ選んでください。",
+    c: ["マグネットブレーキ","可動式マグネットブレーキ","ステータブレーキ","レディブレーキ"],
+    a: 3,
+    e: "高飛車のブレーキは全4種類：①メカニカルブレーキ ②マグネットブレーキ ③可動式マグネットブレーキ ④ステータブレーキ。「レディブレーキ」は存在しません。"
+  },
+  {
+    q: "車両横断のルールで、間違っているものを一つ選んでください。",
+    c: ["「渡ります」のハンドサインを交わす","P09とP07に停車している車両を渡る","P09の車両を渡る際はオペレーターと、降車の車両を渡る際は降車操作盤のスタッフとハンドサインを交わす","ハンドサインが返って来ない場合は、左右をよく確認し、タイミングを見計らって車両を渡る"],
+    a: 3,
+    e: "ハンドサインが返ってこない場合は、車両の横断をしてはなりません。自己判断で渡ることは禁止されています。"
+  },
+  {
+    q: "拘束装置の確認について、順番の正しいものを一つ選んでください。",
+    c: ["①腰ベルト ②縦ベルト ③安全バーのロック ④違和感確認","①違和感確認 ②腰ベルト ③縦ベルト ④安全バーのロック","①縦ベルト ②安全バーのロック ③違和感確認 ④腰ベルト","①安全バーのロック ②縦ベルト ③腰ベルト ④違和感"],
+    a: 0,
+    e: "正しい順番は：①腰ベルトの着用確認 → ②縦ベルトの着用確認 → ③安全バーロックの確認 → ④ベルト・安全バーの違和感の確認です。"
+  },
+  {
+    q: "高飛車の正しい乗車姿勢のポイントで、正しいものはどれか（プレショー準拠）。",
+    c: ["①正面を向く ②背中を背もたれにつける ③安全バーにつかまる","①足をおろしてふくらはぎをクッションに押し付ける ②安全バーにつかまって体を支える ③頭をヘッドレストに押し付ける","①頭を後ろにつける ②背中を後ろにつける ③安全バーにつかまって体を支える","①足を所定の位置におく ②安全バーにしっかりとつかむ ③頭を後ろにつける"],
+    a: 2,
+    e: "正しい乗車姿勢のポイントは3つ：①頭を後ろにつける ②背中も後ろにつける ③安全バーにつかまって体を支える。"
+  },
+  {
+    q: "高飛車の運転モードは、テストモード、エバケーションモード、通常モードとあと一つは何か？",
+    c: ["RUNモード","メンテナンスモード","試運転モード","DISABLEモード"],
+    a: 1,
+    e: "高飛車の運転モードは全4つ：①テストモード ②エバケーションモード ③メンテナンスモード ④通常モード。"
+  },
+  {
+    q: "エラーは出ていないが出発できないという場合、原因と考えられないものはどれか？",
+    c: ["断線","安全バーが規定の位置まで下がっていない","安全バーを上げ切っていなかった","水位の低下"],
+    a: 3,
+    e: "エラー発生時を除き、車両が出発しない原因は：①断線 ②安全バーが規定の位置まで下がっていない ③安全バーを上げ切っていなかった。「水位の低下」は該当しません。"
+  },
+  {
+    q: "高飛車のホームポジションとして正しくないものを一つ選んでください。",
+    c: ["ビッシャー","ポストショー","プレショー","チェッカー"],
+    a: 1,
+    e: "高飛車のホームには5つのポジション：①ゲート前 ②ビッシャー ③プレショー ④降車 ⑤チェッカー。「ポストショー」は存在しません。"
+  },
+  {
+    q: "通常モードにて運営中、何かの理由でパネル操作キースイッチを「切」にする場合の手順で、正しいものを一つ選んでください。",
+    c: ["再度『入』にする際に、メンテナンスモードに切り替える","『切』にする前に、エヴァケーションモードに切り替える","『切』にする前に、メンテナンスモードに切り替える","特に操作は必要ない"],
+    a: 2,
+    e: "通常モードにてパネル操作キースイッチを「切」にする場合は、メンテナンスモードに切り替えてから「切」にすること。B01での車両停止を防止するためです。"
+  },
+  {
+    q: "B01で停止した車両を回収する際の注意事項について、正しいモードを選んでください。",
+    c: ["メンテナンスモード","通常モード","Jog前進","テストモード"],
+    a: 1,
+    e: "B01で車両が停止した際は、通常モードで回収します。メンテナンスモードだとランチで停止してしまいます。"
+  },
+  {
+    q: "ポジションの交代について、間違っているものを一つ選んでください。",
+    c: ["ポジション交代は、確認作業完了後に行う。","ポジション交代のルールは、オペレーターの交代にも適用される。","ポジションを交代するにあたり、時間がかかりそうな場合は、お互いに引継ぎを行えば作業途中で交代することができる。","「確認作業の途中」でスタッフ交代をしてはならない。"],
+    a: 2,
+    e: "各ポジション（オペレーターを含む）の交代は、確認作業完了後に行います。「確認作業の途中」でスタッフ交代をしてはなりません。引継ぎがあっても途中交代は不可です。"
+  },
+  {
+    q: "「ロックアウト」について正しいものを一つ選んでください。",
+    c: ["電源やボタンに「鍵」をすることで、第三者が操作できないようにする仕組みのこと。","危険エリアに「短い時間」入るのであれば鍵をしなくてもよい。","ロックアウトの解除は「お願いすれば」他のスタッフにさせてもよい","急ぎの作業であれば、立入りカードに「名前」の記載は免除される。"],
+    a: 0,
+    e: "ロックアウトとは、機械の電源やボタン等に鍵をかけることで、第三者が操作できないようにする仕組みです。危険エリアには必ずロックアウトし、自分のロックは必ず自分で解除します。"
+  }
+];
+
+const labels = ["A","B","C","D"];
+let current = 0, score = 0, answers = [], answered = false;
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function startQuiz() {
+  current = 0; score = 0; answers = []; answered = false;
+  show('quiz');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  answered = false;
+  const q = questions[current];
+  document.getElementById('progressFill').style.width = ((current + 1) / questions.length * 100) + '%';
+  document.getElementById('qNumber').textContent = `第 ${current + 1} 問 / ${questions.length} 問`;
+  document.getElementById('scoreText').textContent = `正解数: ${score}`;
+
+  let html = `<div class="question-box">${q.q}</div><div class="choices">`;
+  q.c.forEach((c, i) => {
+    html += `<div class="choice-btn" id="choice${i}" onclick="selectAnswer(${i})">
+      <div class="choice-label">${labels[i]}</div>
+      <div class="choice-text">${c}</div>
+      <div class="choice-icon" id="icon${i}"></div>
+    </div>`;
+  });
+  html += '</div><div id="explanationArea"></div>';
+  document.getElementById('quizBody').innerHTML = html;
+}
+
+function selectAnswer(idx) {
+  if (answered) return;
+  answered = true;
+  answers.push(idx);
+  const q = questions[current];
+  const isCorrect = idx === q.a;
+  if (isCorrect) score++;
+
+  document.getElementById('scoreText').textContent = `正解数: ${score}`;
+
+  q.c.forEach((_, i) => {
+    const btn = document.getElementById('choice' + i);
+    btn.classList.add('disabled');
+    if (i === q.a) {
+      btn.classList.add('correct');
+      document.getElementById('icon' + i).textContent = '\u2705';
+    } else if (i === idx && !isCorrect) {
+      btn.classList.add('wrong');
+      document.getElementById('icon' + i).textContent = '\u274C';
+    } else {
+      btn.classList.add('dim');
+    }
+  });
+
+  const nextLabel = current < questions.length - 1 ? '次の問題へ \u2192' : '結果を見る \u{1F3C1}';
+  document.getElementById('explanationArea').innerHTML = `
+    <div class="explanation">
+      <div class="result-label ${isCorrect ? 'correct' : 'wrong'}">
+        ${isCorrect ? '\u2705 正解！' : '\u274C 不正解...'}
+      </div>
+      <p>${q.e}</p>
+    </div>
+    <button class="btn-next" onclick="nextQuestion()">${nextLabel}</button>
+  `;
+
+  document.querySelector('.explanation').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function nextQuestion() {
+  if (current < questions.length - 1) {
+    current++;
+    renderQuestion();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else {
+    showResult();
+  }
+}
+
+function showResult() {
+  show('result');
+  const pct = Math.round(score / questions.length * 100);
+  document.getElementById('resultScore').textContent = score;
+  document.getElementById('resultTotal').textContent = `/ ${questions.length}`;
+  document.getElementById('percentText').textContent = `正答率: ${pct}%`;
+
+  let grade, color;
+  if (pct === 100) { grade = '満点！完璧です！'; color = '#4c4'; }
+  else if (pct >= 80) { grade = '合格！よくできました！'; color = '#4c4'; }
+  else if (pct >= 60) { grade = 'もう少しです！'; color = '#cc4'; }
+  else { grade = '復習しましょう！'; color = '#c44'; }
+
+  document.getElementById('gradeText').textContent = grade;
+  document.getElementById('gradeText').style.color = color;
+
+  const fg = document.getElementById('scoreFg');
+  fg.style.stroke = color;
+  const circ = 2 * Math.PI * 85;
+  fg.style.strokeDasharray = circ;
+  fg.style.strokeDashoffset = circ;
+  setTimeout(() => { fg.style.strokeDashoffset = circ * (1 - score / questions.length); }, 100);
+
+  // Details
+  let dHtml = '';
+  questions.forEach((q, i) => {
+    const ua = answers[i];
+    const ok = ua === q.a;
+    dHtml += `<div class="detail-item">
+      <div class="icon">${ok ? '\u2705' : '\u274C'}</div>
+      <div class="info">
+        <div class="q">Q${i + 1}: ${q.q}</div>
+        ${!ok ? `<div class="ans wrong-ans">あなたの回答: ${q.c[ua]}</div><div class="ans correct-ans">正解: ${q.c[q.a]}</div>` : ''}
+      </div>
+    </div>`;
+  });
+  document.getElementById('detailsBox').innerHTML = dHtml;
+  document.getElementById('detailsBox').style.display = 'none';
+  document.querySelector('.toggle-details').innerHTML = '\u25BC 詳細を見る';
+}
+
+function toggleDetails() {
+  const box = document.getElementById('detailsBox');
+  const btn = document.querySelector('.toggle-details');
+  if (box.style.display === 'none') {
+    box.style.display = 'block';
+    btn.innerHTML = '\u25B2 詳細を隠す';
+  } else {
+    box.style.display = 'none';
+    btn.innerHTML = '\u25BC 詳細を見る';
+  }
+}
+
+function goHome() { show('home'); }
+</script>
+</body>
+</html>
